@@ -191,7 +191,7 @@ class ShipwireTest < Test::Unit::TestCase
     
     response = @carrier.find_rates(
                  @locations[:ottawa],
-                 @locations[:tampa_company],
+                 @locations[:real_home_as_commercial],
                  @packages.values_at(:book, :wii),
                  :order_id => '#1000',
                  :items => @items
