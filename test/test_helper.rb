@@ -195,7 +195,15 @@ module ActiveMerchant
                                       :country => 'NZ',
                                       :city => 'Auckland',
                                       :address1 => '192 Victoria St West',
-                                      :postal_code => '1010')
+                                      :postal_code => '1010'),
+        :tampa_company => Location.new(
+                                      :country => 'US',
+                                      :city => 'Tampa',
+                                      :state => 'FL',
+                                      :company => 'Tampa Company',
+                                      :address1 => '7926 Woodvale Circle',
+                                      :zip => '33615',
+                                      :address_type => 'commercial')
       }
       
     end
