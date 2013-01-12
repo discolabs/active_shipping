@@ -5,7 +5,8 @@ module ActiveMerchant
   module Shipping
     class Shipwire < Carrier
       self.retry_safe = true
-      
+      self.ssl_strict = false
+
       cattr_reader :name
       @@name = "Shipwire"
       
