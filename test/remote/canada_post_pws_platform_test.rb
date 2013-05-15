@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require 'test_helper'
 
 # All remote tests require Canada Post development environment credentials
@@ -126,7 +128,6 @@ class CanadaPostPWSPlatformTest < Test::Unit::TestCase
     rates = @cp.find_rates(@home_params, @usa_params, [@pkg1], build_options, @pkg2, ['USA.SP.AIR'])
     assert_equal CPPWSRateResponse, rates.class
     assert_equal RateEstimate, rates.rates.first.class
-    puts rates.rates.map{|r| r.service_code}
     assert rates.rates.map{|r| r.service_code}.include? "USA.SP.AIR"
   end
 

@@ -64,32 +64,6 @@ module ActiveMerchant
       def requirements
         [:api_key, :secret]
       end
-
-      def find_services(country = nil, options = {})
-        url = endpoint + "rs/ship/service"
-        url += "?country=#{country}" if country
-        response = ssl_get(url, headers(options, RATE_MIMETYPE))
-        parse_services_response(response)
-      rescue ActiveMerchant::ResponseError, ActiveMerchant::Shipping::ResponseError => e
-        error_response(e.response.body, CPPWSRateResponse)
-      end
-
-      def find_service_options(service_code, country, options = {})
-        url = endpoint + "rs/ship/service/#{service_code}"
-        url += "?country=#{country}" if country
-        response = ssl_get(url, headers(options, RATE_MIMETYPE))
-        parse_service_options_response(response)
-      rescue ActiveMerchant::ResponseError, ActiveMerchant::Shipping::ResponseError => e
-        error_response(e.response.body, CPPWSRateResponse)
-      end
-
-      def find_option_details(option_code, options = {})
-        url = endpoint + "rs/ship/option/#{option_code}"
-        response = ssl_get(url, headers(options, RATE_MIMETYPE))
-        parse_option_response(response)
-      rescue ActiveMerchant::ResponseError, ActiveMerchant::Shipping::ResponseError => e
-        error_response(e.response.body, CPPWSRateResponse)
-      end
       
       def find_rates(origin, destination, line_items = [], options = {}, package = nil, services = [])
         url = endpoint + "rs/ship/price"
@@ -101,16 +75,7 @@ module ActiveMerchant
       end
       
       def find_tracking_info(pin, options = {})
-        url = case pin.length
-          when 12,13,16
-            endpoint + "vis/track/pin/%s/detail" % pin
-          when 15
-            endpoint + "vis/track/dnc/%s/detail" % pin
-          else
-            raise InvalidPinFormatError
-          end
-
-        response = ssl_get(url, headers(options, TRACK_MIMETYPE))
+        response = ssl_get(tracking_url(pin), headers(options, TRACK_MIMETYPE))
         parse_tracking_response(response)
       rescue ActiveMerchant::ResponseError, ActiveMerchant::Shipping::ResponseError => e
         error_response(e.response.body, CPPWSTrackingResponse)
@@ -120,16 +85,8 @@ module ActiveMerchant
       
       # line_items should be a list of PackageItem's
       def create_shipment(origin, destination, package, line_items = [], options = {})
-        raise MissingCustomerNumberError unless customer_number = options[:customer_number]
-        if @platform_id.present?
-          url = endpoint + "rs/#{customer_number}-#{@platform_id}/ncshipment"
-        else
-          url = endpoint + "rs/#{customer_number}/ncshipment"
-        end
-
         request_body = build_shipment_request(origin, destination, package, line_items, options)
-
-        response = ssl_post(url, request_body, headers(options, SHIPMENT_MIMETYPE, SHIPMENT_MIMETYPE))
+        response = ssl_post(create_shipment_url(options), request_body, headers(options, SHIPMENT_MIMETYPE, SHIPMENT_MIMETYPE))
         parse_shipment_response(response)
       rescue ActiveMerchant::ResponseError, ActiveMerchant::Shipping::ResponseError => e
         error_response(e.response.body, CPPWSShippingResponse)
@@ -138,24 +95,12 @@ module ActiveMerchant
       end
 
       def retrieve_shipment(shipping_id, options = {})
-        raise MissingCustomerNumberError unless customer_number = options[:customer_number]
-        if @platform_id.present?
-          url = endpoint + "rs/#{customer_number}-#{@platform_id}/ncshipment/#{shipping_id}"
-        else
-          url = endpoint + "rs/#{customer_number}/ncshipment/#{shipping_id}"
-        end
-        response = ssl_post(url, nil, headers(options, SHIPMENT_MIMETYPE, SHIPMENT_MIMETYPE))
+        response = ssl_post(shipment_url(shipping_id, options), nil, headers(options, SHIPMENT_MIMETYPE, SHIPMENT_MIMETYPE))
         shipping_response = parse_shipment_response(response)
       end
 
       def find_shipment_receipt(shipping_id, options = {})
-        raise MissingCustomerNumberError unless customer_number = options[:customer_number]
-        if @platform_id.present?
-          url = endpoint + "rs/#{customer_number}-#{@platform_id}/ncshipment/#{shipping_id}/receipt"
-        else
-          url = endpoint + "rs/#{customer_number}/ncshipment/#{shipping_id}/receipt"
-        end
-        response = ssl_get(url, headers(options, SHIPMENT_MIMETYPE, SHIPMENT_MIMETYPE))
+        response = ssl_get(shipment_receipt_url(shipping_id, options), headers(options, SHIPMENT_MIMETYPE, SHIPMENT_MIMETYPE))
         shipping_response = parse_shipment_receipt_response(response)
       end
       
@@ -181,6 +126,28 @@ module ActiveMerchant
         error_response(e.response.body, CPPWSMerchantDetailsResponse)
       rescue Exception => e
         raise ResponseError.new(e.message)
+      end
+
+      def find_services(country = nil, options = {})
+        response = ssl_get(services_url(country), headers(options, RATE_MIMETYPE))
+        parse_services_response(response)
+      rescue ActiveMerchant::ResponseError, ActiveMerchant::Shipping::ResponseError => e
+        error_response(e.response.body, CPPWSRateResponse)
+      end
+
+      def find_service_options(service_code, country, options = {})
+        response = ssl_get(services_url(country, service_code), headers(options, RATE_MIMETYPE))
+        parse_service_options_response(response)
+      rescue ActiveMerchant::ResponseError, ActiveMerchant::Shipping::ResponseError => e
+        error_response(e.response.body, CPPWSRateResponse)
+      end
+
+      def find_option_details(option_code, options = {})
+        url = endpoint + "rs/ship/option/#{option_code}"
+        response = ssl_get(url, headers(options, RATE_MIMETYPE))
+        parse_option_response(response)
+      rescue ActiveMerchant::ResponseError, ActiveMerchant::Shipping::ResponseError => e
+        error_response(e.response.body, CPPWSRateResponse)
       end
       
       def maximum_weight
@@ -527,7 +494,7 @@ module ActiveMerchant
           :contract_number => root_node.get_text('contract-number').to_s,
           :username => root_node.get_text('merchant-username').to_s,
           :password => root_node.get_text('merchant-password').to_s,
-          :has_default_credit_card => root_node.get_text('has-default-credit-card') == 'true' ? true : false
+          :has_default_credit_card => root_node.get_text('has-default-credit-card') == 'true'
         }
         CPPWSMerchantDetailsResponse.new(true, "", {}, options)
       end
@@ -581,6 +548,50 @@ module ActiveMerchant
       end
 
       private
+
+      def tracking_url(pin)
+        case pin.length
+          when 12,13,16
+            endpoint + "vis/track/pin/%s/detail" % pin
+          when 15
+            endpoint + "vis/track/dnc/%s/detail" % pin
+          else
+            raise InvalidPinFormatError
+          end
+      end
+
+      def create_shipment_url(options)
+        raise MissingCustomerNumberError unless customer_number = options[:customer_number]
+        if @platform_id.present?
+          endpoint + "rs/#{customer_number}-#{@platform_id}/ncshipment"
+        else
+          endpoint + "rs/#{customer_number}/ncshipment"
+        end
+      end
+
+      def shipment_url(shipping_id, options={})
+        raise MissingCustomerNumberError unless customer_number = options[:customer_number]
+        if @platform_id.present?
+          endpoint + "rs/#{customer_number}-#{@platform_id}/ncshipment/#{shipping_id}"
+        else
+          endpoint + "rs/#{customer_number}/ncshipment/#{shipping_id}"
+        end
+      end
+
+      def shipment_receipt_url(shipping_id, options={})
+        raise MissingCustomerNumberError unless customer_number = options[:customer_number]
+        if @platform_id.present?
+          endpoint + "rs/#{customer_number}-#{@platform_id}/ncshipment/#{shipping_id}/receipt"
+        else
+          endpoint + "rs/#{customer_number}/ncshipment/#{shipping_id}/receipt"
+        end
+      end
+
+      def services_url(country=nil, service_code=nil)
+        url = endpoint + "rs/ship/service"
+        url += "/#{service_code}" if service_code
+        url += "?country=#{country}" if country
+      end
 
       def customer_credentials_valid?(credentials)
         (credentials.keys & [:customer_api_key, :customer_secret]).any?
@@ -710,8 +721,6 @@ module ActiveMerchant
           end
         end
       end
-
-
       
       def expected_date_from_node(node)
         if service = node.elements['service-standard']
@@ -810,7 +819,6 @@ module ActiveMerchant
       end
     end
 
-    # custom errors
     class InvalidPinFormatError < StandardError; end
     class MissingCustomerNumberError < StandardError; end
     class MissingShippingNumberError < StandardError; end
