@@ -212,4 +212,15 @@ class UPSTest < Test::Unit::TestCase
     assert_not_equal prices_of.call(:fake_home_as_residential), prices_of.call(:fake_home_as_commercial)
     assert_not_equal prices_of.call(:fake_google_as_commercial), prices_of.call(:fake_google_as_residential)
   end
+
+  def test_obtain_shipping_label
+    assert_nothing_raised do
+      @carrier.obtain_shipping_labels(
+        @locations[:beverly_hills],
+        @locations[:new_york],
+        @packages.values_at(:chocolate_stuff)
+      )
+    end
+  end
+
 end
