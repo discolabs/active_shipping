@@ -14,7 +14,8 @@ module ActiveMerchant
 
       RESOURCES = {
         :rates => 'ups.app/xml/Rate',
-        :track => 'ups.app/xml/Track'
+        :track => 'ups.app/xml/Track',
+        :ship_confirm => 'ups.app/xml/ShipConfirm'
       }
 
       PICKUP_CODES = HashWithIndifferentAccess.new({
@@ -121,6 +122,20 @@ module ActiveMerchant
         parse_tracking_response(response, options)
       end
 
+      def obtain_shipping_labels(origin, destination, packages, options={})
+        # this is a two phase process:
+        # 1) Confirm
+        # 2) Accept
+        options = @options.merge(options)
+        packages = Array(packages)
+        access_request = build_access_request
+        label_request = build_label_request(origin, destination, packages, options)
+        # test mode by default until I know things are working
+        response = commit(:ship_confirm, save_request(access_request + label_request), (options[:test] || true))
+        response
+        # parse_label_response(origin, destination, packages, response, options)
+      end
+
       protected
 
       def upsified_location(location)
@@ -183,42 +198,8 @@ module ActiveMerchant
             #                   * Shipment/DocumentsOnly element
 
             packages.each do |package|
-              imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
-
-              shipment << XmlNode.new("Package") do |package_node|
-
-                # not implemented:  * Shipment/Package/PackagingType element
-                #                   * Shipment/Package/Description element
-
-                package_node << XmlNode.new("PackagingType") do |packaging_type|
-                  packaging_type << XmlNode.new("Code", '02')
-                end
-
-                package_node << XmlNode.new("Dimensions") do |dimensions|
-                  dimensions << XmlNode.new("UnitOfMeasurement") do |units|
-                    units << XmlNode.new("Code", imperial ? 'IN' : 'CM')
-                  end
-                  [:length,:width,:height].each do |axis|
-                    value = ((imperial ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
-                    dimensions << XmlNode.new(axis.to_s.capitalize, [value,0.1].max)
-                  end
-                end
-
-                package_node << XmlNode.new("PackageWeight") do |package_weight|
-                  package_weight << XmlNode.new("UnitOfMeasurement") do |units|
-                    units << XmlNode.new("Code", imperial ? 'LBS' : 'KGS')
-                  end
-
-                  value = ((imperial ? package.lbs : package.kgs).to_f*1000).round/1000.0 # 3 decimals
-                  package_weight << XmlNode.new("Weight", [value,0.1].max)
-                end
-
-                # not implemented:  * Shipment/Package/LargePackageIndicator element
-                #                   * Shipment/Package/ReferenceNumber element
-                #                   * Shipment/Package/PackageServiceOptions element
-                #                   * Shipment/Package/AdditionalHandling element
-              end
-
+              options[:imperial] = ['US','LR','MM'].include?(origin.country_code(:alpha2))
+              shipment << build_package_node(package, options)
             end
 
             # not implemented:  * Shipment/ShipmentServiceOptions element
@@ -227,6 +208,51 @@ module ActiveMerchant
                 rate_info_node << XmlNode.new("NegotiatedRatesIndicator")
               end
             end
+          end
+        end
+        xml_request.to_s
+      end
+
+      def build_label_request(origin, destination, packages, options={})
+
+        xml_request = XmlNode.new('ShipmentConfirmRequest') do |root_node|
+          root_node << XmlNode.new('Request') do |request|
+            # Optional element.
+            request << XmlNode.new('TransactionReference') do |refer|
+              # I don't know what the best way to generate this
+              # value is quite yet.  The documentation has:
+              # "guidlikesubstance"
+              refer << XmlNode.new('CustomerContext', 'tbd')
+              refer << XmlNode.new('XpciVersion', '1.0001')
+            end
+            request << XmlNode.new('RequestAction', 'ShipConfirm')
+            request << XmlNode.new('RequestOption', 'nonvalidate')
+          end
+          root_node   << XmlNode.new('Shipment') do |shipment|
+            shipment  << build_location_node('Shipper', origin, options)
+            shipment  << build_location_node('ShipTo', destination, options)
+            # I need to figure out the best way to specify the service
+            # level desired.
+            shipment  << XmlNode.new('Service') do |service|
+              service << XmlNode.new('Code', options[:service_code] || '14')
+              service << XmlNode.new('Description', options[:service_description] || 'Next Day Air Early AM')
+            end
+            # I need to figure out the best way to specify payment.
+            shipment  << XmlNode.new('PaymentInformation')
+            # A request may specify multiple packages.
+            options[:imperial] = ['US','LR','MM'].include?(origin.country_code(:alpha2))
+            packages.each do |package|
+              shipment << build_package_node(package, options)
+            end
+          end
+          # I don't know all of the options that UPS supports for labels
+          # so I'm going with something very simple for now.
+          root_node        << XmlNode.new('LabelSpecification') do |specification|
+            specification  << XmlNode.new('LabelPrintMethod') do |print_method|
+              print_method << XmlNode.new('Code', 'GIF')
+            end
+            specification  << XmlNode.new('HTTPUserAgent', 'Mozilla/4.5') # hmmm
+            specification  << XmlNode.new('LabelImageFormat', 'GIF')
           end
         end
         xml_request.to_s
@@ -249,6 +275,10 @@ module ActiveMerchant
         #                   * Shipment/(Shipper|ShipTo|ShipFrom)/AttentionName element
         #                   * Shipment/(Shipper|ShipTo|ShipFrom)/TaxIdentificationNumber element
         location_node = XmlNode.new(name) do |location_node|
+          # You must specify the shipper name when creating labels.
+          if shipper_name = (@options[:origin_name] || options[:origin_name])
+            location_node << XmlNode.new('Name', shipper_name)
+          end
           location_node << XmlNode.new('PhoneNumber', location.phone.gsub(/[^\d]/,'')) unless location.phone.blank?
           location_node << XmlNode.new('FaxNumber', location.fax.gsub(/[^\d]/,'')) unless location.fax.blank?
 
@@ -270,6 +300,42 @@ module ActiveMerchant
             address << XmlNode.new("ResidentialAddressIndicator", true) unless location.commercial? # the default should be that UPS returns residential rates for destinations that it doesn't know about
             # not implemented: Shipment/(Shipper|ShipTo|ShipFrom)/Address/ResidentialAddressIndicator element
           end
+        end
+      end
+
+      def build_package_node(package,options={})
+        XmlNode.new("Package") do |package_node|
+
+          # not implemented:  * Shipment/Package/PackagingType element
+          #                   * Shipment/Package/Description element
+
+          package_node << XmlNode.new("PackagingType") do |packaging_type|
+            packaging_type << XmlNode.new("Code", '02')
+          end
+
+          package_node << XmlNode.new("Dimensions") do |dimensions|
+            dimensions << XmlNode.new("UnitOfMeasurement") do |units|
+              units << XmlNode.new("Code", options[:imperial] ? 'IN' : 'CM')
+            end
+            [:length,:width,:height].each do |axis|
+              value = ((options[:imperial] ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
+              dimensions << XmlNode.new(axis.to_s.capitalize, [value,0.1].max)
+            end
+          end
+
+          package_node << XmlNode.new("PackageWeight") do |package_weight|
+            package_weight << XmlNode.new("UnitOfMeasurement") do |units|
+              units << XmlNode.new("Code", options[:imperial] ? 'LBS' : 'KGS')
+            end
+
+            value = ((options[:imperial] ? package.lbs : package.kgs).to_f*1000).round/1000.0 # 3 decimals
+            package_weight << XmlNode.new("Weight", [value,0.1].max)
+          end
+
+          # not implemented:  * Shipment/Package/LargePackageIndicator element
+          #                   * Shipment/Package/ReferenceNumber element
+          #                   * Shipment/Package/PackageServiceOptions element
+          #                   * Shipment/Package/AdditionalHandling element
         end
       end
 

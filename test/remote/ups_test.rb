@@ -214,11 +214,13 @@ class UPSTest < Test::Unit::TestCase
   end
 
   def test_obtain_shipping_label
+    assert @options[:origin_name].present?, "test/fixtures.yml must have a valid ups/origin_name for this test to run"
     assert_nothing_raised do
       @carrier.obtain_shipping_labels(
         @locations[:beverly_hills],
         @locations[:new_york],
-        @packages.values_at(:chocolate_stuff)
+        @packages.values_at(:chocolate_stuff),
+        { :test => true }
       )
     end
   end
