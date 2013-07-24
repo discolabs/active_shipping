@@ -229,8 +229,8 @@ module ActiveMerchant
             request << XmlNode.new('RequestOption', 'nonvalidate')
           end
           root_node   << XmlNode.new('Shipment') do |shipment|
-            shipment  << build_location_node('Shipper', origin, options)
-            shipment  << build_location_node('ShipTo', destination, options)
+            shipment  << build_location_node('Shipper', origin, options[:shipper] || {})
+            shipment  << build_location_node('ShipTo', destination, options[:destination] || {})
             # I need to figure out the best way to specify the service
             # level desired.
             shipment  << XmlNode.new('Service') do |service|
