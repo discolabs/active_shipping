@@ -15,7 +15,8 @@ module ActiveMerchant
       RESOURCES = {
         :rates => 'ups.app/xml/Rate',
         :track => 'ups.app/xml/Track',
-        :ship_confirm => 'ups.app/xml/ShipConfirm'
+        :ship_confirm => 'ups.app/xml/ShipConfirm',
+        :ship_accept => 'ups.app/xml/ShipAccept'
       }
 
       PICKUP_CODES = HashWithIndifferentAccess.new({
@@ -123,17 +124,34 @@ module ActiveMerchant
       end
 
       def obtain_shipping_labels(origin, destination, packages, options={})
-        # this is a two phase process:
-        # 1) Confirm
-        # 2) Accept
         options = @options.merge(options)
         packages = Array(packages)
         access_request = build_access_request
-        label_request = build_label_request(origin, destination, packages, options)
-        # test mode by default until I know things are working
-        response = commit(:ship_confirm, save_request(access_request + label_request), (options[:test] || true))
-        response
-        # parse_label_response(origin, destination, packages, response, options)
+
+        begin
+
+          # STEP 1: Confirm.  Validation step, important for verifying price.
+          label_request = build_label_request(origin, destination, packages, options)
+          confirm_response = commit(:ship_confirm, save_request(access_request + label_request), (options[:test] || false))
+
+          # ... now, get the digest, it's needed to get the label.  In theory,
+          # one could make decisions based on the price or some such to avoid
+          # surprises.  This also has *no* error handling yet.
+          digest = parse_ship_confirm(confirm_response)[:digest]
+
+          # STEP 2: Accept. Use shipment digest in first response to get the actual label.
+          accept_request = build_accept_request(digest, options)
+          accept_response = commit(:ship_accept, save_request(access_request + accept_request), (options[:test] || false))
+
+          # ...finally, build a map from the response that contains
+          # the label data and tracking information.
+          parse_accept_response(accept_response)
+
+        rescue RuntimeError => e
+          raise 'Could not get a label. qq.'
+
+        end
+
       end
 
       protected
@@ -258,8 +276,20 @@ module ActiveMerchant
               print_method << XmlNode.new('Code', 'GIF')
             end
             specification  << XmlNode.new('HTTPUserAgent', 'Mozilla/4.5') # hmmm
-            specification  << XmlNode.new('LabelImageFormat', 'GIF')
+            specification  << XmlNode.new('LabelImageFormat', 'GIF') do |image_format|
+              image_format << XmlNode.new('Code', 'GIF')
+            end
           end
+        end
+        xml_request.to_s
+      end
+
+      def build_accept_request(digest, options={})
+        xml_request = XmlNode.new('ShipmentAcceptRequest') do |root_node|
+          root_node << XmlNode.new('Request') do |request|
+            request << XmlNode.new('RequestAction', 'ShipAccept')
+          end
+          root_node << XmlNode.new('ShipmentDigest', digest)
         end
         xml_request.to_s
       end
@@ -292,6 +322,18 @@ module ActiveMerchant
             location_node << XmlNode.new('ShipperNumber', origin_account)
           elsif name == 'ShipTo' and (destination_account = @options[:destination_account] || options[:destination_account])
             location_node << XmlNode.new('ShipperAssignedIdentificationNumber', destination_account)
+          end
+
+          if options[:company_name]
+            location_node << XmlNode.new('CompanyName', options[:company_name])
+          end
+
+          if options[:phone_number]
+            location_node << XmlNode.new('PhoneNumber', options[:phone_number])
+          end
+
+          if options[:attention_name]
+            location_node << XmlNode.new('AttentionName', options[:attention_name])
           end
 
           location_node << XmlNode.new('Address') do |address|
@@ -502,6 +544,16 @@ module ActiveMerchant
 
       def response_message(xml)
         xml.get_text('/*/Response/Error/ErrorDescription | /*/Response/ResponseStatusDescription').to_s
+      end
+
+      def parse_ship_confirm(response)
+        xml = REXML::Document.new(response)
+        { :identification_number => xml.get_text('/*/ShipmentIdentificationNumber').to_s,
+          :digest => xml.get_text('/*/ShipmentDigest').to_s }
+      end
+
+      def parse_ship_accept(response)
+        xml = REXML::Document.new(response)
       end
 
       def commit(action, request, test = false)
