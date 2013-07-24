@@ -238,7 +238,13 @@ module ActiveMerchant
               service << XmlNode.new('Description', options[:service_description] || 'Next Day Air Early AM')
             end
             # I need to figure out the best way to specify payment.
-            shipment  << XmlNode.new('PaymentInformation')
+            shipment      << XmlNode.new('PaymentInformation') do |payment|
+              payment     << XmlNode.new('Prepaid') do |prepay|
+                prepay    << XmlNode.new('BillShipper') do |bill|
+                  bill    << XmlNode.new('AccountNumber', options[:origin_account])
+                end
+              end
+            end
             # A request may specify multiple packages.
             options[:imperial] = ['US','LR','MM'].include?(origin.country_code(:alpha2))
             packages.each do |package|
