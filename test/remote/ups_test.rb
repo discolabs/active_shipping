@@ -214,18 +214,19 @@ class UPSTest < Test::Unit::TestCase
   end
 
   def test_obtain_shipping_label
+    labels = nil
 
     # I want to provide some helpful information if this test fails.
     # Perhaps it is better to skip and warn than to make an *assertion*
     # about configuration?
     assert @options[:origin_name].present?, "test/fixtures.yml must have a valid ups/origin_name for this test to run"
-    assert @options[:origin_account.present?, "test/fixtures.yml must have a valid ups/origin_account for this test to run"
+    assert @options[:origin_account].present?, "test/fixtures.yml must have a valid ups/origin_account for this test to run"
 
     assert_nothing_raised do
-      @carrier.obtain_shipping_labels(
+      labels = @carrier.obtain_shipping_labels(
         @locations[:beverly_hills],
         @locations[:new_york],
-        @packages.values_at(:chocolate_stuff),
+        @packages.values_at(:chocolate_stuff, :book, :american_wii),
         { :test => true,
           :destination => {
             :company_name => 'N.A.',
@@ -235,7 +236,6 @@ class UPSTest < Test::Unit::TestCase
         }
       )
     end
-
   end
 
 end
