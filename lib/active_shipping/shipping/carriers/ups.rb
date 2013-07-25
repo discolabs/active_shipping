@@ -131,8 +131,8 @@ module ActiveMerchant
         begin
 
           # STEP 1: Confirm.  Validation step, important for verifying price.
-          label_request = build_label_request(origin, destination, packages, options)
-          confirm_response = commit(:ship_confirm, save_request(access_request + label_request), (options[:test] || false))
+          confirm_request = build_label_request(origin, destination, packages, options)
+          confirm_response = commit(:ship_confirm, save_request(access_request + confirm_request), (options[:test] || false))
 
           # ... now, get the digest, it's needed to get the label.  In theory,
           # one could make decisions based on the price or some such to avoid
