@@ -145,7 +145,7 @@ module ActiveMerchant
 
           # ...finally, build a map from the response that contains
           # the label data and tracking information.
-          parse_accept_response(accept_response)
+          parse_ship_accept(accept_response)
 
         rescue RuntimeError => e
           raise 'Could not get a label. qq.'
@@ -554,6 +554,10 @@ module ActiveMerchant
 
       def parse_ship_accept(response)
         xml = REXML::Document.new(response)
+        success = response_success?(xml)
+        message = response_message(xml)
+
+        LabelResponse.new(success, message, Hash.from_xml(response).values.first)
       end
 
       def commit(action, request, test = false)

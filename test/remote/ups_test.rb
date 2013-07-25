@@ -214,7 +214,7 @@ class UPSTest < Test::Unit::TestCase
   end
 
   def test_obtain_shipping_label
-    labels = nil
+    response = nil
 
     # I want to provide some helpful information if this test fails.
     # Perhaps it is better to skip and warn than to make an *assertion*
@@ -223,7 +223,7 @@ class UPSTest < Test::Unit::TestCase
     assert @options[:origin_account].present?, "test/fixtures.yml must have a valid ups/origin_account for this test to run"
 
     assert_nothing_raised do
-      labels = @carrier.obtain_shipping_labels(
+      response = @carrier.obtain_shipping_labels(
         @locations[:beverly_hills],
         @locations[:new_york],
         @packages.values_at(:chocolate_stuff, :book, :american_wii),
@@ -236,6 +236,12 @@ class UPSTest < Test::Unit::TestCase
         }
       )
     end
+
+    # All behavior specific to how a LabelResponse behaves in the
+    # context of UPS label data is a matter for unit tests.  If
+    # the data changes substantially, the obtain_shipping_labels
+    # ought to raise an exception and this test will fail.
+    assert_instance_of ActiveMerchant::Shipping::LabelResponse, response
   end
 
 end
