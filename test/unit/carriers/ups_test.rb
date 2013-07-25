@@ -169,4 +169,38 @@ class UPSTest < Test::Unit::TestCase
     assert Package.new((150 * 16) + 0.01, [5,5,5], :units => :imperial).mass > @carrier.maximum_weight
     assert Package.new((150 * 16) - 0.01, [5,5,5], :units => :imperial).mass < @carrier.maximum_weight
   end
+
+  def test_obtain_labels
+    confirm_response = xml_fixture('ups/triple_confirm_response')
+    accept_response = xml_fixture('ups/triple_accept_response')
+    @carrier.stubs(:commit).returns(confirm_response, accept_response)
+
+    response = @carrier.obtain_shipping_labels(
+      @locations[:beverly_hills],
+      @locations[:new_york],
+      @packages.values_at(:chocolate_stuff, :book, :american_wii),
+      { :test => true,
+        :destination => {
+          :company_name => 'N.A.',
+          :phone_number => '123-123-1234',
+          :attention_name => 'Jane Doe'
+        }
+      }
+    )
+
+    # Sanity checks.  Hmm.  That looks a lot like a type check.
+    assert_instance_of LabelResponse, response
+    assert_equal 3, response.labels.count
+
+    # These tracking numbers are part of the fixture data.  What we're trying
+    # to verify is that the data in the XML is extracted properly.
+    tracking = response.labels.map { |label| label[:tracking_number] }
+    assert_includes tracking, "1ZA03R691594829862"
+    assert_includes tracking, "1ZA03R691592132475"
+    assert_includes tracking, "1ZA03R691590470881"
+
+    pictures = response.labels.map { |label| label[:image] }
+    refute_includes pictures, nil
+  end
+
 end
