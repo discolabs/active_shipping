@@ -324,16 +324,16 @@ module ActiveMerchant
             location_node << XmlNode.new('ShipperAssignedIdentificationNumber', destination_account)
           end
 
-          if options[:company_name]
-            location_node << XmlNode.new('CompanyName', options[:company_name])
+          if name = location.company_name || location.name
+            location_node << XmlNode.new('CompanyName', name)
           end
 
-          if options[:phone_number]
-            location_node << XmlNode.new('PhoneNumber', options[:phone_number])
+          if phone = location.phone
+            location_node << XmlNode.new('PhoneNumber', phone)
           end
 
-          if options[:attention_name]
-            location_node << XmlNode.new('AttentionName', options[:attention_name])
+          if attn = location.name
+            location_node << XmlNode.new('AttentionName', attn)
           end
 
           location_node << XmlNode.new('Address') do |address|

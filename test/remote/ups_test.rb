@@ -1,7 +1,6 @@
 require 'test_helper'
 
 class UPSTest < Test::Unit::TestCase
-
   def setup
     @packages  = TestFixtures.packages
     @locations = TestFixtures.locations
@@ -225,15 +224,9 @@ class UPSTest < Test::Unit::TestCase
     assert_nothing_raised do
       response = @carrier.obtain_shipping_labels(
         @locations[:beverly_hills],
-        @locations[:new_york],
+        @locations[:new_york_with_name],
         @packages.values_at(:chocolate_stuff, :book, :american_wii),
-        { :test => true,
-          :destination => {
-            :company_name => 'N.A.',
-            :phone_number => '123-123-1234',
-            :attention_name => 'Jane Doe'
-          }
-        }
+        { :test => true }
       )
     end
 

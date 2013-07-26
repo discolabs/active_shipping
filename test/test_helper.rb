@@ -187,7 +187,8 @@ module ActiveMerchant
                                       :state => 'NY',
                                       :address1 => '780 3rd Avenue',
                                       :address2 => 'Suite  2601',
-                                      :zip => '10017'),
+                                      :zip => '10017',
+                                      :phone => '123-123-1234'),
         :wellington => Location.new(
                                       :country => 'NZ',
                                       :city => 'Wellington',
