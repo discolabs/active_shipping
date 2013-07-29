@@ -6,13 +6,21 @@ module ActiveMerchant #:nodoc:
 
     class LabelResponse < Response
 
-      attr :labels
       attr :params # maybe?
 
       def initialize(success, message, params = {}, options = {})
         @params = params
-        extract_package_data(params)
         super
+      end
+
+      def labels
+        return @labels if @labels
+        packages = params["ShipmentResults"]["PackageResults"]
+        packages = [ packages ] if Hash === packages
+        @labels  = packages.map do |package|
+          { :tracking_number => package["TrackingNumber"],
+            :image           => package["LabelImage"] }
+        end
       end
 
       protected
