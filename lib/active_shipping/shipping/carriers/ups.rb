@@ -132,23 +132,33 @@ module ActiveMerchant
 
           # STEP 1: Confirm.  Validation step, important for verifying price.
           confirm_request = build_label_request(origin, destination, packages, options)
+          logger.debug(confirm_request) if logger
+
           confirm_response = commit(:ship_confirm, save_request(access_request + confirm_request), (options[:test] || false))
+          logger.debug(confirm_response) if logger
 
           # ... now, get the digest, it's needed to get the label.  In theory,
           # one could make decisions based on the price or some such to avoid
           # surprises.  This also has *no* error handling yet.
-          digest = parse_ship_confirm(confirm_response)[:digest]
+          xml = parse_ship_confirm(confirm_response)
+          success = response_success?(xml)
+          message = response_message(xml)
+          digest  = response_digest(xml)
+          raise message unless success
 
           # STEP 2: Accept. Use shipment digest in first response to get the actual label.
           accept_request = build_accept_request(digest, options)
+          logger.debug(accept_request) if logger
+
           accept_response = commit(:ship_accept, save_request(access_request + accept_request), (options[:test] || false))
+          logger.debug(accept_response) if logger
 
           # ...finally, build a map from the response that contains
           # the label data and tracking information.
           parse_ship_accept(accept_response)
 
         rescue RuntimeError => e
-          raise 'Could not get a label. qq.'
+          raise "Could not obtain shipping label. #{e.message}."
 
         end
 
@@ -546,10 +556,12 @@ module ActiveMerchant
         xml.get_text('/*/Response/Error/ErrorDescription | /*/Response/ResponseStatusDescription').to_s
       end
 
+      def response_digest(xml)
+        xml.get_text('/*/ShipmentDigest').to_s
+      end
+
       def parse_ship_confirm(response)
         xml = REXML::Document.new(response)
-        { :identification_number => xml.get_text('/*/ShipmentIdentificationNumber').to_s,
-          :digest => xml.get_text('/*/ShipmentDigest').to_s }
       end
 
       def parse_ship_accept(response)
