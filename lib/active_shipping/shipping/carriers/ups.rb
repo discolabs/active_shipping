@@ -265,6 +265,11 @@ module ActiveMerchant
               service << XmlNode.new('Code', options[:service_code] || '14')
               service << XmlNode.new('Description', options[:service_description] || 'Next Day Air Early AM')
             end
+            shipment  << XmlNode.new('ShipmentServiceOptions') do |opts|
+              if options[:saturday_delivery]
+                opts  << XmlNode.new('SaturdayDelivery')
+              end
+            end
             # I need to figure out the best way to specify payment.
             shipment      << XmlNode.new('PaymentInformation') do |payment|
               payment     << XmlNode.new('Prepaid') do |prepay|

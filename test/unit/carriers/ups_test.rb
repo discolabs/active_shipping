@@ -234,5 +234,20 @@ class UPSTest < Test::Unit::TestCase
     refute_includes pictures, nil
   end
 
+  def test_saturday_delivery
+    # It's ok to use Nokogiri for development, right?
+    response = Nokogiri::XML @carrier.send(:build_label_request,
+      @locations[:beverly_hills],
+      @locations[:annapolis],
+      @packages.values_at(:chocolate_stuff),
+      options = {
+        :test => true,
+        :saturday_delivery => true
+      })
+
+    saturday = response.search '/ShipmentConfirmRequest/Shipment/ShipmentServiceOptions/SaturdayDelivery'
+    refute_empty saturday
+  end
+
 
 end
