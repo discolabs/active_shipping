@@ -205,6 +205,13 @@ module ActiveMerchant
                                       :city => 'Barceloneta',
                                       :address1 => '1 Nueva St',
                                       :postal_code => '00617'),
+        :annapolis => Location.new(
+                                      :name => 'Big Red',
+                                      :country => 'US',
+                                      :city => 'Annapolis',
+                                      :address1 => '1 Park Place',
+                                      :address2 => '#7',
+                                      :postal_code => '21401')
       }
 
       @@line_items1 = [
