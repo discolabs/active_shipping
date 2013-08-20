@@ -397,10 +397,12 @@ module ActiveMerchant
 
           if options[:reference_number]
             package_node << XmlNode.new("ReferenceNumber") do |ref_node|
-              ref_node   << XmlNode.new("Code", options[:reference][:code] || "")
-              ref_node   << XmlNode.new("Value", options[:reference][:value])
+              ref_node   << XmlNode.new("Code", options[:reference_number][:code] || "")
+              ref_node   << XmlNode.new("Value", options[:reference_number][:value])
             end
           end
+
+          package_node
 
           # not implemented:  * Shipment/Package/LargePackageIndicator element
           #                   * Shipment/Package/PackageServiceOptions element

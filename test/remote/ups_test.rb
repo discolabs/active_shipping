@@ -227,7 +227,7 @@ class UPSTest < Test::Unit::TestCase
         @locations[:new_york_with_name],
         @packages.values_at(:chocolate_stuff, :book, :american_wii),
         { :test => true,
-          :reference => { :value => "FOO-123", :code => "PO" } }
+          :reference_number => { :value => "FOO-123", :code => "PO" } }
       )
     end
 
