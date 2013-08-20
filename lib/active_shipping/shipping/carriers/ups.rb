@@ -395,8 +395,14 @@ module ActiveMerchant
             package_weight << XmlNode.new("Weight", [value,0.1].max)
           end
 
+          if options[:reference_number]
+            package_node << XmlNode.new("ReferenceNumber") do |ref_node|
+              ref_node   << XmlNode.new("Code", options[:reference][:code] || "")
+              ref_node   << XmlNode.new("Value", options[:reference][:value])
+            end
+          end
+
           # not implemented:  * Shipment/Package/LargePackageIndicator element
-          #                   * Shipment/Package/ReferenceNumber element
           #                   * Shipment/Package/PackageServiceOptions element
           #                   * Shipment/Package/AdditionalHandling element
         end

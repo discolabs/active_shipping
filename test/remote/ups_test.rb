@@ -226,7 +226,8 @@ class UPSTest < Test::Unit::TestCase
         @locations[:beverly_hills],
         @locations[:new_york_with_name],
         @packages.values_at(:chocolate_stuff, :book, :american_wii),
-        { :test => true }
+        { :test => true,
+          :reference => { :value => "FOO-123", :code => "PO" } }
       )
     end
 
@@ -234,6 +235,19 @@ class UPSTest < Test::Unit::TestCase
     # context of UPS label data is a matter for unit tests.  If
     # the data changes substantially, the obtain_shipping_labels
     # ought to raise an exception and this test will fail.
+    assert_instance_of ActiveMerchant::Shipping::LabelResponse, response
+  end
+
+  def test_obtain_shipping_label_without_dimensions
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.obtain_shipping_labels(
+        @locations[:beverly_hills],
+        @locations[:new_york_with_name],
+        @packages.values_at(:tshirts),
+        { :test => true }
+      )
+    end
     assert_instance_of ActiveMerchant::Shipping::LabelResponse, response
   end
 
