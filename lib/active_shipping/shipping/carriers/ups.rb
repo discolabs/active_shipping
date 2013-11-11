@@ -257,10 +257,20 @@ module ActiveMerchant
             request << XmlNode.new('RequestOption', 'nonvalidate')
           end
           root_node   << XmlNode.new('Shipment') do |shipment|
-            shipment  << build_location_node('Shipper', origin, options[:shipper] || {})
-            shipment  << build_location_node('ShipTo', destination, options[:destination] || {})
-            # I need to figure out the best way to specify the service
-            # level desired.
+            # Shipper is where the package should be returned if it is undeliverable, it
+            # is not necessarily the same as the pickup location!  If this is confusing,
+            # please refer to the Shipping Package XML Developers guide and look for:
+            # "/ShipmentConfirmRequest/Shipment/Shipper/Address"
+            # The ShipFrom is the pickup location of the package and is used to
+            # calculate shipping rates.
+            shipment  << build_location_node('ShipTo', destination, {})
+            shipment  << build_location_node('Shipper', options[:shipper] || origin, {})
+            if options[:ship_from]
+              # A company name is required.  The UPS API will generate an error, but
+              # should it be pre-empted?  I'm leaning towards no...
+              # warn or log though?
+              shipment  << build_location_node('ShipFrom', options[:ship_from], {})
+            end
             shipment  << XmlNode.new('Service') do |service|
               service << XmlNode.new('Code', options[:service_code] || '14')
               service << XmlNode.new('Description', options[:service_description] || 'Next Day Air Early AM')
