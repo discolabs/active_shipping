@@ -266,5 +266,19 @@ class UPSTest < Test::Unit::TestCase
     refute_empty saturday
   end
 
+  def test_label_request_negotiated_rates
+    response = Nokogiri::XML @carrier.send(:build_label_request,
+      @locations[:beverly_hills],
+      @locations[:annapolis],
+      @packages.values_at(:chocolate_stuff),
+      options = {
+        :test => true,
+        :saturday_delivery => true,
+        :origin_account => 'A01B23'
+      })
+
+    negotiated_rates = response.search '/ShipmentConfirmRequest/Shipment/RateInformation/NegotiatedRatesIndicator'
+    refute_empty negotiated_rates
+  end
 
 end
