@@ -241,6 +241,18 @@ module ActiveMerchant
         xml_request.to_s
       end
 
+      # Build XML node to request a shipping label for the given packages.
+      #
+      # options:
+      # * origin_account: who will pay for the shipping label
+      # * customer_context: a "guid like substance" -- according to UPS
+      # * shipper: who is sending the package and where it should be returned
+      #     if it is undeliverable.
+      # * ship_from: where the package is picked up.
+      # * service_code: default to '14'
+      # * service_descriptor: default to 'Next Day Air Early AM'
+      # * saturday_delivery: any truthy value causes this element to exist
+      #
       def build_label_request(origin, destination, packages, options={})
 
         xml_request = XmlNode.new('ShipmentConfirmRequest') do |root_node|
