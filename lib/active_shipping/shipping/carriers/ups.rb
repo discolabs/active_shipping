@@ -252,52 +252,54 @@ module ActiveMerchant
       # * service_code: default to '14'
       # * service_descriptor: default to 'Next Day Air Early AM'
       # * saturday_delivery: any truthy value causes this element to exist
+      # * optional_processing: 'validate' (blank) or 'nonvalidate' or blank
       #
       def build_label_request(origin, destination, packages, options={})
 
+        # There are a lot of unimplemented elements, documenting all of them
+        # wouldprobably be unhelpful.
+
         xml_request = XmlNode.new('ShipmentConfirmRequest') do |root_node|
           root_node << XmlNode.new('Request') do |request|
-            # Optional element.
-            request << XmlNode.new('TransactionReference') do |refer|
-              # I don't know what the best way to generate this
-              # value is quite yet.  The documentation has:
-              # "guidlikesubstance"
-              refer << XmlNode.new('CustomerContext', 'tbd')
-              refer << XmlNode.new('XpciVersion', '1.0001')
-            end
+            # Required element and the text must be "ShipConfirm"
             request << XmlNode.new('RequestAction', 'ShipConfirm')
-            request << XmlNode.new('RequestOption', 'nonvalidate')
+            # Required element cotnrols level of address validation.
+            request << XmlNode.new('RequestOption', options[:optional_processing] || 'validate')
+            # Optional element to identify transactions between client and server.
+            if options[:customer_context]
+              request << XmlNode.new('TransactionReference') do |refer|
+                refer << XmlNode.new('CustomerContext', options[:customer_context])
+              end
+            end
           end
           root_node   << XmlNode.new('Shipment') do |shipment|
-            # Shipper is where the package should be returned if it is undeliverable, it
-            # is not necessarily the same as the pickup location!  If this is confusing,
-            # please refer to the Shipping Package XML Developers guide and look for:
-            # "/ShipmentConfirmRequest/Shipment/Shipper/Address"
-            # The ShipFrom is the pickup location of the package and is used to
-            # calculate shipping rates.
-            shipment  << build_location_node('ShipTo', destination, {})
-            shipment  << build_location_node('Shipper', options[:shipper] || origin, {})
-            if options[:ship_from]
-              # A company name is required.  The UPS API will generate an error, but
-              # should it be pre-empted?  I'm leaning towards no...
-              # warn or log though?
-              shipment  << build_location_node('ShipFrom', options[:ship_from], {})
-            end
+            # Required element.
             shipment  << XmlNode.new('Service') do |service|
               service << XmlNode.new('Code', options[:service_code] || '14')
               service << XmlNode.new('Description', options[:service_description] || 'Next Day Air Early AM')
             end
+            # Required element. The delivery destination.
+            shipment  << build_location_node('ShipTo', destination, {})
+            # Required element. The company whose account is responsible for the label(s).
+            shipment  << build_location_node('Shipper', options[:shipper] || origin, {})
+            # Required if pickup is different different from shipper's address.
+            if options[:ship_from]
+              shipment  << build_location_node('ShipFrom', options[:ship_from], {})
+            end
+            # Optional.
             if options[:saturday_delivery]
               shipment << XmlNode.new('ShipmentServiceOptions') do |opts|
                 opts   << XmlNode.new('SaturdayDelivery')
               end
             end
+            # Optional.
             if options[:origin_account]
               shipment << XmlNode.new('RateInformation') do |rate|
                 rate   << XmlNode.new('NegotiatedRatesIndicator')
               end
             end
-            # I need to figure out the best way to specify payment.
+            # Conditionally required.  Either this element or an ItemizedPaymentInformation
+            # is needed.  However, only PaymentInformation is not implemented.
             shipment      << XmlNode.new('PaymentInformation') do |payment|
               payment     << XmlNode.new('Prepaid') do |prepay|
                 prepay    << XmlNode.new('BillShipper') do |bill|
