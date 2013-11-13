@@ -281,4 +281,18 @@ class UPSTest < Test::Unit::TestCase
     refute_empty negotiated_rates
   end
 
+  def test_label_request_different_shipper
+    pickup   = @locations[:beverly_hills]
+    deliver  = @locations[:annapolis]
+    shipper  = @locations[:fake_google_as_commercial]
+    packages = @packages.values_at(:chocolate_stuff)
+
+    result   = Nokogiri::XML(@carrier.send(:build_label_request,
+      pickup, deliver, packages, { :test => true, :shipper => shipper }))
+
+    address = result.search '/ShipmentConfirmRequest/Shipment/Shipper/Address/AddressLine1'
+    assert_equal address.text, shipper.address1
+    refute_equal address.text, pickup.address1
+  end
+
 end
