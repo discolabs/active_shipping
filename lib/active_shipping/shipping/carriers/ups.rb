@@ -101,6 +101,8 @@ module ActiveMerchant
 
       US_TERRITORIES_TREATED_AS_COUNTRIES = ["AS", "FM", "GU", "MH", "MP", "PW", "PR", "VI"]
 
+      IMPERIAL_COUNTRIES = ['US','LR','MM']
+
       def requirements
         [:key, :login, :password]
       end
@@ -128,40 +130,30 @@ module ActiveMerchant
         packages = Array(packages)
         access_request = build_access_request
 
-        begin
+        # STEP 1: Confirm.  Validation step, important for verifying price.
+        confirm_request = build_label_request(origin, destination, packages, options)
+        logger.debug(confirm_request) if logger
 
-          # STEP 1: Confirm.  Validation step, important for verifying price.
-          confirm_request = build_label_request(origin, destination, packages, options)
-          logger.debug(confirm_request) if logger
+        confirm_response = commit(:ship_confirm, save_request(access_request + confirm_request), (options[:test] || false))
+        logger.debug(confirm_response) if logger
 
-          confirm_response = commit(:ship_confirm, save_request(access_request + confirm_request), (options[:test] || false))
-          logger.debug(confirm_response) if logger
+        # ... now, get the digest, it's needed to get the label.  In theory,
+        # one could make decisions based on the price or some such to avoid
+        # surprises.  This also has *no* error handling yet.
+        xml = parse_ship_confirm(confirm_response)
+        raise response_message(xml) unless response_success?(xml)
 
-          # ... now, get the digest, it's needed to get the label.  In theory,
-          # one could make decisions based on the price or some such to avoid
-          # surprises.  This also has *no* error handling yet.
-          xml = parse_ship_confirm(confirm_response)
-          success = response_success?(xml)
-          message = response_message(xml)
-          digest  = response_digest(xml)
-          raise message unless success
+        # STEP 2: Accept. Use shipment digest in first response to get the actual label.
+        digest = response_digest(xml)
+        accept_request = build_accept_request(digest, options)
+        logger.debug(accept_request) if logger
 
-          # STEP 2: Accept. Use shipment digest in first response to get the actual label.
-          accept_request = build_accept_request(digest, options)
-          logger.debug(accept_request) if logger
+        accept_response = commit(:ship_accept, save_request(access_request + accept_request), (options[:test] || false))
+        logger.debug(accept_response) if logger
 
-          accept_response = commit(:ship_accept, save_request(access_request + accept_request), (options[:test] || false))
-          logger.debug(accept_response) if logger
-
-          # ...finally, build a map from the response that contains
-          # the label data and tracking information.
-          parse_ship_accept(accept_response)
-
-        rescue RuntimeError => e
-          raise "Could not obtain shipping label. #{e.message}."
-
-        end
-
+        # ...finally, build a map from the response that contains
+        # the label data and tracking information.
+        parse_ship_accept(accept_response)
       end
 
       protected
@@ -226,7 +218,7 @@ module ActiveMerchant
             #                   * Shipment/DocumentsOnly element
 
             packages.each do |package|
-              options[:imperial] = ['US','LR','MM'].include?(origin.country_code(:alpha2))
+              options[:imperial] = IMPERIAL_COUNTRIES.include?(origin.country_code(:alpha2))
               shipment << build_package_node(package, options)
             end
 
@@ -255,6 +247,9 @@ module ActiveMerchant
       # * optional_processing: 'validate' (blank) or 'nonvalidate' or blank
       #
       def build_label_request(origin, destination, packages, options={})
+        options[:optional_processing] ||= 'validate'
+        options[:service_code] ||= '14'
+        options[:service_description] ||= 'Next Day Air Early AM'
 
         # There are a lot of unimplemented elements, documenting all of them
         # wouldprobably be unhelpful.
@@ -264,7 +259,7 @@ module ActiveMerchant
             # Required element and the text must be "ShipConfirm"
             request << XmlNode.new('RequestAction', 'ShipConfirm')
             # Required element cotnrols level of address validation.
-            request << XmlNode.new('RequestOption', options[:optional_processing] || 'validate')
+            request << XmlNode.new('RequestOption', options[:optional_processing])
             # Optional element to identify transactions between client and server.
             if options[:customer_context]
               request << XmlNode.new('TransactionReference') do |refer|
@@ -275,8 +270,8 @@ module ActiveMerchant
           root_node   << XmlNode.new('Shipment') do |shipment|
             # Required element.
             shipment  << XmlNode.new('Service') do |service|
-              service << XmlNode.new('Code', options[:service_code] || '14')
-              service << XmlNode.new('Description', options[:service_description] || 'Next Day Air Early AM')
+              service << XmlNode.new('Code', options[:service_code])
+              service << XmlNode.new('Description', options[:service_description])
             end
             # Required element. The delivery destination.
             shipment  << build_location_node('ShipTo', destination, {})
@@ -308,7 +303,7 @@ module ActiveMerchant
               end
             end
             # A request may specify multiple packages.
-            options[:imperial] = ['US','LR','MM'].include?(origin.country_code(:alpha2))
+            options[:imperial] = IMPERIAL_COUNTRIES.include?(origin.country_code(:alpha2))
             packages.each do |package|
               shipment << build_package_node(package, options)
             end
@@ -319,7 +314,6 @@ module ActiveMerchant
             specification  << XmlNode.new('LabelPrintMethod') do |print_method|
               print_method << XmlNode.new('Code', 'GIF')
             end
-            specification  << XmlNode.new('HTTPUserAgent', 'Mozilla/4.5') # hmmm
             specification  << XmlNode.new('LabelImageFormat', 'GIF') do |image_format|
               image_format << XmlNode.new('Code', 'GIF')
             end
@@ -410,7 +404,7 @@ module ActiveMerchant
               units << XmlNode.new("Code", options[:imperial] ? 'IN' : 'CM')
             end
             [:length,:width,:height].each do |axis|
-              value = ((options[:imperial] ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
+              value = truncate(options[:imperial] ? package.inches(axis) : package.cm(axis))
               dimensions << XmlNode.new(axis.to_s.capitalize, [value,0.1].max)
             end
           end
@@ -421,10 +415,10 @@ module ActiveMerchant
             end
 
             if package.value.present? && package.currency.present?
-              add_insured_node( package_node, currency:package.currency, value:(package.value.to_i/100) )
+              add_insured_node( package_node, currency: package.currency, value: package.value )
             end
 
-            value = ((options[:imperial] ? package.lbs : package.kgs).to_f*1000).round/1000.0 # 3 decimals
+            value = truncate(options[:imperial] ? package.lbs : package.kgs)
             package_weight << XmlNode.new("Weight", [value,0.1].max)
           end
 
@@ -445,15 +439,15 @@ module ActiveMerchant
 
       def add_insured_node(*args)
         params, package_node = args.extract_options!, args[0]
-        currency, value = params[:currency], params[:value].to_i
+        currency = params[:currency]
+        value = truncate(params[:value].to_f, 2)
+        value_keys = %w(DeclaredValue InsuredValue)
         package_node << XmlNode.new("PackageServiceOptions") do |package_service_options|
-          package_service_options << XmlNode.new("DeclaredValue") do |declared_value|
-            declared_value << XmlNode.new("CurrencyCode", currency)
-            declared_value << XmlNode.new("MonetaryValue", (value.to_i))
-          end
-          package_service_options << XmlNode.new("InsuredValue") do |declared_value|
-            declared_value << XmlNode.new("CurrencyCode", currency)
-            declared_value << XmlNode.new("MonetaryValue", (value.to_i))
+          value_keys.each do |name|
+            package_service_options << XmlNode.new(name) do |value_node|
+              value_node << XmlNode.new("CurrencyCode", currency)
+              value_node << XmlNode.new("MonetaryValue", value)
+            end
           end
         end
       end
@@ -649,6 +643,10 @@ module ActiveMerchant
 
         name ||= OTHER_NON_US_ORIGIN_SERVICES[code] unless name == 'US'
         name ||= DEFAULT_SERVICES[code]
+      end
+
+      def truncate(value, decimal_points=3)
+        value.round(decimal_points)
       end
 
     end
