@@ -395,7 +395,6 @@ module ActiveMerchant
           :status_description => status_description,
           :delivery_signature => delivery_signature,
           :shipment_events => shipment_events,
-          :shipper_address => (shipper_address.nil? || shipper_address.unknown?) ? nil : shipper_address,
           :origin => origin,
           :destination => destination,
           :tracking_number => tracking_number
