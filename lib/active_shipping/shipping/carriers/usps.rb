@@ -141,9 +141,9 @@ module ActiveMerchant
         /Delivery status information is not available/
       ]
 
-      ESCAPING_AND_SYMBOLS = '&amp;lt;\S*&amp;gt;'
-      LEADING_USPS = '^USPS'
-      TRAILING_ASTERISKS = '\*+$'
+      ESCAPING_AND_SYMBOLS = /&amp;lt;\S*&amp;gt;/
+      LEADING_USPS = /^USPS/
+      TRAILING_ASTERISKS = /\*+$/
       SERVICE_NAME_SUBSTITUTIONS = /#{ESCAPING_AND_SYMBOLS}|#{LEADING_USPS}|#{TRAILING_ASTERISKS}/
 
       def find_tracking_info(tracking_number, options={})
