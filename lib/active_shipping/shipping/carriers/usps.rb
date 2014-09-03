@@ -141,6 +141,11 @@ module ActiveMerchant
         /Delivery status information is not available/
       ]
 
+      ESCAPING_AND_SYMBOLS = '&amp;lt;\S*&amp;gt;'
+      LEADING_USPS = '^USPS'
+      TRAILING_ASTERISKS = '\*+$'
+      SERVICE_NAME_SUBSTITUTIONS = /#{ESCAPING_AND_SYMBOLS}|#{LEADING_USPS}|#{TRAILING_ASTERISKS}/
+
       def find_tracking_info(tracking_number, options={})
         options = @options.update(options)
         tracking_request = build_tracking_request(tracking_number, options)
@@ -371,6 +376,7 @@ module ActiveMerchant
             RateEstimate.new(origin,destination,@@name,"USPS #{service_name}",
                                       :package_rates => rate_hash[service_name][:package_rates],
                                       :service_code => rate_hash[service_name][:service_code],
+                                      :delivery_range => rate_hash[service_name][:delivery_range],
                                       :currency => 'USD')
           end
           rate_estimates.reject! {|e| e.package_count != packages.length}
@@ -400,13 +406,7 @@ module ActiveMerchant
           package_node.each_element(service_node) do |service_response_node|
             service_name = service_response_node.get_text(service_name_node).to_s
 
-            # strips the double-escaped HTML for trademark symbols from service names
-            service_name.gsub!(/&amp;lt;\S*&amp;gt;/,'')
-            # ...leading "USPS"
-            service_name.gsub!(/^USPS/,'')
-            # ...trailing asterisks
-            service_name.gsub!(/\*+$/,'')
-            # ...surrounding spaces
+            service_name.gsub!(SERVICE_NAME_SUBSTITUTIONS,'')
             service_name.strip!
 
             # aggregate specific package rates into a service-centric RateEstimate
@@ -414,6 +414,7 @@ module ActiveMerchant
             # later packages with same service will add to them
             this_service = rate_hash[service_name] ||= {}
             this_service[:service_code] ||= service_response_node.attributes[service_code_node]
+            this_service[:delivery_range] ||= parse_rate_response_delivery_range(service_response_node)
             package_rates = this_service[:package_rates] ||= []
             this_package_rate = {:package => this_package,
                                  :rate => Package.cents_from(service_response_node.get_text(rate_node).to_s.to_f)}
@@ -593,6 +594,13 @@ module ActiveMerchant
 
       def strip_zip(zip)
         zip.to_s.scan(/\d{5}/).first || zip
+      end
+
+      def parse_rate_response_delivery_range(document)
+        text = document.get_text('SvcCommitments').to_s
+        text =~ /^(\d+)\s*[-]\s*(\d+)/
+
+        [timestamp_from_business_day($1.to_i), timestamp_from_business_day($2.to_i)]
       end
 
     end
