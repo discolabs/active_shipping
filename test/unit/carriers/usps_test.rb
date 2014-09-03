@@ -169,16 +169,20 @@ class USPSTest < Test::Unit::TestCase
 
     assert_not_equal [],response.rates
 
-    assert_equal [3420, 5835, 8525, 8525], response.rates.map(&:price)
-    assert_equal [1, 2, 4, 12], response.rates.map(&:service_code).map(&:to_i).sort
+    assert_equal [1795, 3420, 5835, 8525, 8525], response.rates.map(&:price)
+    assert_equal [1, 2, 4, 12, 15], response.rates.map(&:service_code).map(&:to_i).sort
 
-    rate = response.rates.first
+    rate = response.rates.detect {|r| r.service_code != "15"}
     assert_instance_of Array, rate.delivery_range
     assert_equal 2, rate.delivery_range.size
     assert_instance_of DateTime, rate.delivery_range.first
     assert_instance_of DateTime, rate.delivery_range.last
 
+    first_class = response.rates.detect {|r| r.service_code == "15"}
+    assert_equal [], first_class.delivery_range
+
     ordered_service_names = ["USPS Express Mail International",
+      "USPS First-Class Package International Service",
       "USPS GXG Envelopes",
       "USPS Global Express Guaranteed (GXG)",
       "USPS Priority Mail International"]

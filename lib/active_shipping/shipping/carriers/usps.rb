@@ -598,7 +598,9 @@ module ActiveMerchant
 
       def parse_rate_response_delivery_range(document)
         text = document.get_text('SvcCommitments').to_s
-        text =~ /^(\d+)\s*[-]\s*(\d+)/
+        text =~ /^(\d+)\s*-\s*(\d+)/
+
+        return unless $1.presence && $2.presence
 
         [timestamp_from_business_day($1.to_i), timestamp_from_business_day($2.to_i)]
       end
