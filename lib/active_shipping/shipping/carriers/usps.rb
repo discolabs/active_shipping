@@ -445,7 +445,7 @@ module ActiveMerchant
             this_service[:service_code] ||= service_response_node.attributes[service_code_node]
             package_rates = this_service[:package_rates] ||= []
             this_package_rate = {:package => this_package,
-                                 :rate => Package.cents_from(service_response_node.get_text(rate_node).to_s.to_f)}
+                                 :rate => Package.cents_from(rate_value(rate_node, service_response_node, commercial_type))}
 
             package_rates << this_package_rate if package_valid_for_service(this_package,service_response_node)
           end
@@ -625,6 +625,13 @@ module ActiveMerchant
       end
 
       private
+
+      def rate_value(rate_node, service_response_node, commercial_type)
+        rate = service_response_node.get_text(rate_node)
+        rate ||= service_response_node.get_text(DOMESTIC_RATE_FIELD[:base]) if commercial_type == :plus
+        rate ||= service_response_node.get_text('Rate')
+        rate.to_s.to_f
+      end
 
       def commercial_type(options)
         if options[:commercial_plus] == true
