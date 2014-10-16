@@ -422,7 +422,7 @@ class USPSTest < Test::Unit::TestCase
     rates = Hash[response.rates.map {|rate| [rate.service_name, rate.price]}]
 
     assert_equal 0,rates["USPS First-Class Mail Parcel"]
-    assert_equal 405,rates["USPS First-Class Package Service"]
+    assert_equal 276,rates["USPS First-Class Package Service"]
     assert_equal 625,rates["USPS Priority Mail 2-Day"]
   end
 

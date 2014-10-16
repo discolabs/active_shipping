@@ -627,10 +627,12 @@ module ActiveMerchant
       private
 
       def rate_value(rate_node, service_response_node, commercial_type)
-        rate = service_response_node.get_text(rate_node)
-        rate ||= service_response_node.get_text(DOMESTIC_RATE_FIELD[:base]) if commercial_type == :plus
-        rate ||= service_response_node.get_text('Rate')
-        rate.to_s.to_f
+        rate_value = service_response_node.get_text(rate_node).to_s.to_f
+        return rate_value unless commercial_type == :plus
+
+        commercial_base_rate = service_response_node.get_text(DOMESTIC_RATE_FIELD[:base]).to_s.to_f
+        return commercial_base_rate if commercial_base_rate > 0 && commercial_base_rate < rate_value
+        rate_value
       end
 
       def commercial_type(options)
