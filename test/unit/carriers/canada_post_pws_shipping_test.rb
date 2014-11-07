@@ -225,7 +225,7 @@ class CanadaPostPwsShippingTest < Test::Unit::TestCase
     options = @default_options.dup
 
     response = xml_fixture('canadapost_pws/shipment_response')
-    @cp.expects(:ssl_post).with do |url, request| 
+    @cp.expects(:ssl_post).with do |_url, request| 
       request_hash = Hash.from_xml(request)
 
       assert_equal 44, request_hash['non_contract_shipment']['delivery_spec']['customs']['sku_list']['item'].first['customs_description'].length

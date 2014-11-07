@@ -115,7 +115,7 @@ module ActiveMerchant
       private
       
       def build_rate_request(origin, destination, line_items = [], options = {})
-        line_items = [line_items] if !line_items.is_a?(Array)
+        line_items = [line_items] unless line_items.is_a?(Array)
         origin = origin.is_a?(Location) ? origin : Location.new(origin)
         destination = destination.is_a?(Location) ? destination : Location.new(destination)
 
@@ -232,12 +232,9 @@ module ActiveMerchant
       # <!--   - weight      (mandatory)      -->
       # <!--   - description (mandatory)      -->
       # <!--   - ready to ship (optional)     -->
-      
       def build_line_items(line_items)
-        xml_line_items = XmlNode.new('lineItems') do |line_items_node|
-          
+        XmlNode.new('lineItems') do |line_items_node|
           line_items.each do |line_item|
-            
             line_items_node << XmlNode.new('item') do |item|
               item << XmlNode.new('quantity', 1)
               item << XmlNode.new('weight', line_item.kilograms)
@@ -246,13 +243,10 @@ module ActiveMerchant
               item << XmlNode.new('height', line_item.cm(:height).to_s)
               item << XmlNode.new('description', line_item.options[:description] || ' ')
               item << XmlNode.new('readyToShip', line_item.options[:ready_to_ship] || nil)
-              
               # By setting the 'readyToShip' tag to true, Sell Online will not pack this item in the boxes defined in the merchant profile.
             end
           end
         end
-        
-        xml_line_items
       end
       
       def dollar_amount(cents)

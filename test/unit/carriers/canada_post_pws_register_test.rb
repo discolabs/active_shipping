@@ -19,7 +19,7 @@ class CanadaPostPwsRegisterTest < Test::Unit::TestCase
   def test_register_merchant_with_error
     endpoint = @cp.endpoint + "ot/token"
     response = xml_fixture('canadapost_pws/register_token_error')
-    http_response = mock()
+    http_response = mock
     http_response.stubs(:code).returns('400')
     http_response.stubs(:body).returns(response)
     response_error = ActiveMerchant::ResponseError.new(http_response)
@@ -58,7 +58,7 @@ class CanadaPostPwsRegisterTest < Test::Unit::TestCase
   def test_retrieve_merchant_with_error
     endpoint = @cp.endpoint + "ot/token/1234567890"
     response = xml_fixture('canadapost_pws/merchant_details_error')
-    http_response = mock()
+    http_response = mock
     http_response.stubs(:code).returns('400')
     http_response.stubs(:body).returns(response)
     response_error = ActiveMerchant::ResponseError.new(http_response)

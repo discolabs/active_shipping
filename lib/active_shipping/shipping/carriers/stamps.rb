@@ -40,7 +40,7 @@ module ActiveMerchant
                  'Legal Flat Rate Envelope'
                 ].freeze
 
-      US_POSSESSIONS = ["AS", "FM", "GU", "MH", "MP", "PW", "PR", "VI"]
+      US_POSSESSIONS = %w(AS FM GU MH MP PW PR VI)
 
       SERVICE_TYPES = {
         'US-FC'  => 'USPS First-Class Mail',
@@ -696,7 +696,7 @@ module ActiveMerchant
       def parse_package(rate)
         weight = rate.get_text('WeightOz').to_s.to_f
 
-        dimensions = ['Length', 'Width', 'Height'].map do |dim|
+        dimensions = %w(Length Width Height).map do |dim|
           rate.get_text(dim) ? rate.get_text(dim).to_s.to_f : nil
         end
         dimensions.compact!

@@ -97,11 +97,11 @@ module ActiveMerchant
       })
 
       # From http://en.wikipedia.org/w/index.php?title=European_Union&oldid=174718707 (Current as of November 30, 2007)
-      EU_COUNTRY_CODES = ["GB", "AT", "BE", "BG", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"]
+      EU_COUNTRY_CODES = %w(GB AT BE BG CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE)
 
-      US_TERRITORIES_TREATED_AS_COUNTRIES = ["AS", "FM", "GU", "MH", "MP", "PW", "PR", "VI"]
+      US_TERRITORIES_TREATED_AS_COUNTRIES = %w(AS FM GU MH MP PW PR VI)
 
-      IMPERIAL_COUNTRIES = ["US", "LR", "MM"]
+      IMPERIAL_COUNTRIES = %w(US LR MM)
 
       def requirements
         [:key, :login, :password]
@@ -552,9 +552,7 @@ module ActiveMerchant
               if delivered_activity.get_text('Status/StatusType/Code') == 'D'
                 actual_delivery_date = parse_ups_datetime(:date => delivered_activity.get_text('Date'), :time => delivered_activity.get_text('Time'))
               end
-              if !destination
-                destination = shipment_events[-1].location
-              end
+              destination = shipment_events[-1].location unless destination
               shipment_events[-1] = ShipmentEvent.new(shipment_events.last.name, shipment_events.last.time, destination)
             end
           end

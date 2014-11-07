@@ -33,7 +33,7 @@ class FedExTest < MiniTest::Unit::TestCase
     Timecop.freeze(today) do
       delivery_date = Date.today + 7.days # FIVE_DAYS in fixture response, plus weekend
       timestamp = Time.now.iso8601
-      @carrier.expects(:commit).with do |request, options|
+      @carrier.expects(:commit).with do |request, _options|
         parsed_response = Hash.from_xml(request)
         parsed_response['RateRequest']['RequestedShipment']['ShipTimestamp'] == timestamp
       end.returns(mock_response)
@@ -49,7 +49,7 @@ class FedExTest < MiniTest::Unit::TestCase
     Timecop.freeze(DateTime.new(2013, 3, 11)) do
       delivery_date = Date.today + 8.days # FIVE_DAYS in fixture response, plus turn_around_time, plus weekend
       timestamp = (Time.now + 1.day).iso8601
-      @carrier.expects(:commit).with do |request, options|
+      @carrier.expects(:commit).with do |request, _options|
         parsed_response = Hash.from_xml(request)
         parsed_response['RateRequest']['RequestedShipment']['ShipTimestamp'] == timestamp
       end.returns(mock_response)
@@ -64,7 +64,7 @@ class FedExTest < MiniTest::Unit::TestCase
   def test_transaction_id_sent_as_customer_transaction_id
     transaction_id = '9999-test'
     @carrier = FedEx.new(:key => '1111', :password => '2222', :account => '3333', :login => '4444', :transaction_id => transaction_id)
-    @carrier.expects(:commit).with do |request, options|
+    @carrier.expects(:commit).with do |request, _options|
       parsed_request = Hash.from_xml(request)
       parsed_request['RateRequest']['TransactionDetail']['CustomerTransactionId'] == transaction_id
     end.returns(xml_fixture('fedex/ottawa_to_beverly_hills_rate_response'))

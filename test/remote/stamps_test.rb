@@ -205,7 +205,7 @@ class StampsTest < Test::Unit::TestCase
         {
           service: 'US-MM',
           insured_value: 70,
-          add_ons: [ 'US-A-INS', 'US-A-DC' ]
+          add_ons: %w(US-A-INS US-A-DC)
         }
       )
       tracking = @carrier.find_tracking_info(shipment.tracking_number)
@@ -238,7 +238,7 @@ class StampsTest < Test::Unit::TestCase
         {
           service: 'US-MM',
           insured_value: 70,
-          add_ons: [ 'US-A-INS', 'US-A-DC' ]
+          add_ons: %w(US-A-INS US-A-DC)
         }
       )
       tracking = @carrier.find_tracking_info(shipment.stamps_tx_id, stamps_tx_id: true)

@@ -93,7 +93,7 @@ module ActiveMerchant
       }
 
 
-      TRANSIT_TIMES = ["UNKNOWN","ONE_DAY","TWO_DAYS","THREE_DAYS","FOUR_DAYS","FIVE_DAYS","SIX_DAYS","SEVEN_DAYS","EIGHT_DAYS","NINE_DAYS","TEN_DAYS","ELEVEN_DAYS","TWELVE_DAYS","THIRTEEN_DAYS","FOURTEEN_DAYS","FIFTEEN_DAYS","SIXTEEN_DAYS","SEVENTEEN_DAYS","EIGHTEEN_DAYS"]
+      TRANSIT_TIMES = %w(UNKNOWN ONE_DAY TWO_DAYS THREE_DAYS FOUR_DAYS FIVE_DAYS SIX_DAYS SEVEN_DAYS EIGHT_DAYS NINE_DAYS TEN_DAYS ELEVEN_DAYS TWELVE_DAYS THIRTEEN_DAYS FOURTEEN_DAYS FIFTEEN_DAYS SIXTEEN_DAYS SEVENTEEN_DAYS EIGHTEEN_DAYS)
 
       # FedEx tracking codes as described in the FedEx Tracking Service WSDL Guide
       # All delays also have been marked as exceptions
@@ -162,7 +162,7 @@ module ActiveMerchant
 
       protected
       def build_rate_request(origin, destination, packages, options={})
-        imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
+        imperial = %w(US LR MM).include?(origin.country_code(:alpha2))
 
         xml_request = XmlNode.new('RateRequest', 'xmlns' => 'http://fedex.com/ws/rate/v13') do |root_node|
           root_node << build_request_header
@@ -178,7 +178,7 @@ module ActiveMerchant
 
             freight = has_freight?(options)
 
-            if !freight
+            unless freight
               # fedex api wants this up here otherwise request returns an error
               rs << XmlNode.new('DropoffType', options[:dropoff_type] || 'REGULAR_PICKUP')
               rs << XmlNode.new('PackagingType', options[:packaging_type] || 'YOUR_PACKAGING')

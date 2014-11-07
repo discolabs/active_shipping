@@ -113,7 +113,7 @@ module ActiveMerchant
         end
 
         def rates_hash
-          products_hash.select { |service, products| products.size == @packages.size }
+          products_hash.select { |_service, products| products.size == @packages.size }
         end
 
         def products_hash

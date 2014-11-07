@@ -34,7 +34,7 @@ module MiniTest
       end
 
       def load_fixtures
-        file = File.exists?(LOCAL_CREDENTIALS) ? LOCAL_CREDENTIALS : DEFAULT_CREDENTIALS
+        file = File.exist?(LOCAL_CREDENTIALS) ? LOCAL_CREDENTIALS : DEFAULT_CREDENTIALS
         yaml_data = YAML.load(File.read(file))
         model_fixtures = Dir.glob(File.join(MODEL_FIXTURES,'**','*.yml'))
         model_fixtures.each do |file|
@@ -59,7 +59,7 @@ module MiniTest
         return unless hash.is_a?(Hash)
 
         hash.symbolize_keys!
-        hash.each{|k,v| symbolize_keys(v)}
+        hash.each{|_k,v| symbolize_keys(v)}
       end
 
       def file_fixture(filename)

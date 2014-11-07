@@ -51,7 +51,7 @@ class NewZealandPostTest < Test::Unit::TestCase
     response = @carrier.find_rates(@wellington, @auckland, @packages.values_at(:book, :small_half_pound))
     assert_equal 8, response.rates.size
     assert_equal [ 800, 840, 900, 900, 1000, 1100, 1430, 1780 ], response.rates.map(&:price)
-    assert_equal [ "PIKFC5", "PCB3C5", "PIFFC5", "PIKBC5", "PIFBC5", "PICBC5", "NZPRBA5", "NZSRBA5" ], response.rates.map(&:service_code)
+    assert_equal %w(PIKFC5 PCB3C5 PIFFC5 PIKBC5 PIFBC5 PICBC5 NZPRBA5 NZSRBA5), response.rates.map(&:service_code)
     names = [
       "ParcelPost C5 Flat Bag",
       "ParcelPost Tracked C5 Postage Only - Tracked",
@@ -132,7 +132,7 @@ class NewZealandPostTest < Test::Unit::TestCase
     response = @carrier.find_rates(@wellington, @ottawa, @packages.values_at(:book, :small_half_pound))
     assert_equal 4, response.rates.size
     assert_equal [ 13050, 8500, 2460, 2214 ], response.rates.map(&:price)
-    assert_equal [ "ICPNC500", "IEZPC500", "IACNC500", "IECNC500" ], response.rates.map(&:service_code)
+    assert_equal %w(ICPNC500 IEZPC500 IACNC500 IECNC500), response.rates.map(&:service_code)
     names = [
       "International Express Courier Int Express Pcl Zone C 500gm",
       "International Economy Courier Int Econ Cour Pcl Zn C 500gm",

@@ -83,7 +83,7 @@ module ActiveMerchant
           xml.tag! 'AddressInfo' do
             xml.tag! 'Country', COUNTRIES[destination.country_code]
             
-            state = ['US', 'CA'].include?(destination.country_code.to_s) ? destination.state : ''
+            state = %w(US CA).include?(destination.country_code.to_s) ? destination.state : ''
             
             xml.tag! 'State_Province', state
             xml.tag! 'PostalCode', destination.zip

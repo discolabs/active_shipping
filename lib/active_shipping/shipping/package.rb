@@ -236,7 +236,7 @@ module ActiveMerchant #:nodoc:
         # [1,2] => [1,1,2]
         # [5] => [5,5,5]
         # etc..
-        2.downto(@dimensions.length) do |n|
+        2.downto(@dimensions.length) do |_n|
           @dimensions.unshift(@dimensions[0])
         end
       end

@@ -51,26 +51,26 @@ class UPSTest < Test::Unit::TestCase
   end
 
   def test_just_country_given
-     if !@options[:origin_account]
-       response = @carrier.find_rates(
-                    @locations[:beverly_hills],
-                    Location.new(:country => 'CA'),
-                    Package.new(100, [5,10,20])
-                  )
-       assert_not_equal [], response.rates
-     end
+    unless @options[:origin_account]
+      response = @carrier.find_rates(
+          @locations[:beverly_hills],
+          Location.new(:country => 'CA'),
+          Package.new(100, [5, 10, 20])
+      )
+      assert_not_equal [], response.rates
+    end
   end
 
-   def test_just_country_given_with_origin_account_fails
-     if @options[:origin_account]
-       assert_raise ResponseError do
-         response = @carrier.find_rates(
-                    @locations[:beverly_hills],
-                    Location.new(:country => 'CA'),
-                    Package.new(100, [5,10,20])
-                  )
-       end
-     end
+  def test_just_country_given_with_origin_account_fails
+    if @options[:origin_account]
+      assert_raise ResponseError do
+        response = @carrier.find_rates(
+            @locations[:beverly_hills],
+            Location.new(:country => 'CA'),
+            Package.new(100, [5, 10, 20])
+        )
+      end
+    end
   end
 
   def test_ottawa_to_beverly_hills

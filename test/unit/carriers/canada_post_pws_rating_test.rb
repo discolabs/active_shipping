@@ -74,7 +74,7 @@ class CanadaPostPwsRatingTest < Test::Unit::TestCase
 
   def test_find_rates_with_error
     response = xml_fixture('canadapost_pws/rates_info_error')
-    http_response = mock()
+    http_response = mock
     http_response.stubs(:code).returns('400')
     http_response.stubs(:body).returns(response)
     response_error = ActiveMerchant::ResponseError.new(http_response)
@@ -221,7 +221,7 @@ class CanadaPostPwsRatingTest < Test::Unit::TestCase
     doc = Nokogiri::HTML(xml)
 
     options = doc.xpath('//options/option').map {|o| o.content }.sort
-    assert_equal ["PA18", "PA19", "HFP", "DNS", "LAD"].sort, options
+    assert_equal %w(PA18 PA19 HFP DNS LAD).sort, options
   end
 
   def test_build_rates_request_with_single_item

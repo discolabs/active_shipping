@@ -76,7 +76,7 @@ module ActiveMerchant
         days.times do
           begin
             date = date + 1
-          end until ![0,6].include?(date.wday)
+          end while [0, 6].include?(date.wday)
         end
         date
       end

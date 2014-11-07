@@ -101,12 +101,12 @@ module ActiveMerchant
 
       def retrieve_shipment(shipping_id, options = {})
         response = ssl_post(shipment_url(shipping_id, options), nil, headers(options, SHIPMENT_MIMETYPE, SHIPMENT_MIMETYPE))
-        shipping_response = parse_shipment_response(response)
+        parse_shipment_response(response)
       end
 
       def find_shipment_receipt(shipping_id, options = {})
         response = ssl_get(shipment_receipt_url(shipping_id, options), headers(options, SHIPMENT_MIMETYPE, SHIPMENT_MIMETYPE))
-        shipping_response = parse_shipment_receipt_response(response)
+        parse_shipment_receipt_response(response)
       end
       
       def retrieve_shipping_label(shipping_response, options = {})
@@ -164,19 +164,18 @@ module ActiveMerchant
       def parse_services_response(response)
         doc = REXML::Document.new(REXML::Text::unnormalize(response))
         service_nodes = doc.elements['services'].elements.collect('service') {|node| node }
-        services = service_nodes.inject({}) do |result, node|
+        service_nodes.inject({}) do |result, node|
           service_code = node.get_text("service-code").to_s
           service_name = node.get_text("service-name").to_s
           service_link = node.elements["link"].attributes['href']
           service_link_media_type = node.elements["link"].attributes['media-type']
           result[service_code] = {
-            :name => service_name,
-            :link => service_link,
-            :link_media_type => service_link_media_type
+              :name => service_name,
+              :link => service_link,
+              :link_media_type => service_link_media_type
           }
           result
         end
-        services
       end
 
       def parse_service_options_response(response)
@@ -530,7 +529,7 @@ module ActiveMerchant
             option_nodes.inject({}) do |result, node|
             result[node.get_text("option-code").to_s] = node.get_text("option-price").to_s.to_f
             result
-          end
+            end
         else
           []
         end
@@ -757,11 +756,11 @@ module ActiveMerchant
       end
 
       def sanitize_weight_kg(kg)
-        return kg == 0 ? 0.001 : kg;
+        kg == 0 ? 0.001 : kg
       end
 
       def sanitize_price_from_cents(value)
-        return value == 0 ? 0.01 : value.round / 100.0
+        value == 0 ? 0.01 : value.round / 100.0
       end
 
       def origin_hash_for(root_node)

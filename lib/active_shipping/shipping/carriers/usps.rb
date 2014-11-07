@@ -122,7 +122,7 @@ module ActiveMerchant
       }
 
       # Array of U.S. possessions according to USPS: https://www.usps.com/ship/official-abbreviations.htm
-      US_POSSESSIONS = ["AS", "FM", "GU", "MH", "MP", "PW", "PR", "VI"]
+      US_POSSESSIONS = %w(AS FM GU MH MP PW PR VI)
 
       # TODO: figure out how USPS likes to say "Ivory Coast"
       #
@@ -505,12 +505,12 @@ module ActiveMerchant
           [:length, :width, :height].each_with_index do |axis,i|
             max_dimensions[axis] = single_axis_values[i] if single_axis_values[i]
           end
-          return package_valid_for_max_dimensions(package, max_dimensions)
+          package_valid_for_max_dimensions(package, max_dimensions)
         end
       end
 
       def package_valid_for_max_dimensions(package,dimensions)
-        valid = ((not ([:length,:width,:height].map {|dim| dimensions[dim].nil? || dimensions[dim].to_f >= package.inches(dim).to_f}.include?(false))) and
+        ((not ([:length,:width,:height].map {|dim| dimensions[dim].nil? || dimensions[dim].to_f >= package.inches(dim).to_f}.include?(false))) and
                 (dimensions[:weight].nil? || dimensions[:weight] >= package.pounds) and
                 (dimensions[:length_plus_girth].nil? or
                     dimensions[:length_plus_girth].to_f >=
@@ -518,8 +518,6 @@ module ActiveMerchant
                 (dimensions[:length_plus_width_plus_height].nil? or
                     dimensions[:length_plus_width_plus_height].to_f >=
                     package.inches(:length) + package.inches(:width) + package.inches(:height)))
-
-        return valid
       end
 
       def parse_tracking_response(response, options)
