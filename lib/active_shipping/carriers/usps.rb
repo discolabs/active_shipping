@@ -291,7 +291,7 @@ module ActiveShipping
     end
 
     def world_rates(origin, destination, packages, options = {})
-      request = build_world_rate_request(packages, destination, options)
+      request = build_world_rate_request(origin, packages, destination, options)
       # never use test mode; rate requests just won't work on test servers
       parse_rate_response(origin, destination, packages, commit(:world_rates, request, false), options)
     end
@@ -371,11 +371,15 @@ module ActiveShipping
     #
     # package.options[:mail_type] -- one of [:package, :postcard, :matter_for_the_blind, :envelope].
     #                                 Defaults to :package.
-    def build_world_rate_request(packages, destination, options)
+    def build_world_rate_request(origin, packages, destination, options)
       country = COUNTRY_NAME_CONVERSIONS[destination.country.code(:alpha2).value] || destination.country.name
       xml_builder = Nokogiri::XML::Builder.new do |xml|
         xml.IntlRateV2Request('USERID' => @options[:login]) do
           Array(packages).each_with_index do |package, id|
+            if country == "Canada"
+              xml.OriginZip(strip_zip(origin.zip))
+            end
+
             xml.Package('ID' => id) do
               xml.Pounds(0)
               xml.Ounces([package.ounces, 1].max.ceil) # takes an integer for some reason, must be rounded UP
