@@ -680,6 +680,12 @@ module ActiveShipping
               xml.DCISType(PACKAGE_DELIVERY_CONFIRMATION_CODES[delivery_confirmation])
             end
           end
+          if package.options[:insured]
+            xml.InsuredValue do
+              xml.CurrencyCode(package.currency)
+              xml.MonetaryValue(package.options[:insured_value] || package.value)
+            end
+          end
         end
 
         # not implemented:  * Shipment/Package/LargePackageIndicator element
