@@ -683,7 +683,7 @@ module ActiveShipping
           if package.options[:insured]
             xml.InsuredValue do
               xml.CurrencyCode(package.currency)
-              xml.MonetaryValue(package.options[:insured_value] || package.value)
+              xml.MonetaryValue(package.options[:insured_value] || dollar_amount(package.value))
             end
           end
         end
@@ -691,6 +691,10 @@ module ActiveShipping
         # not implemented:  * Shipment/Package/LargePackageIndicator element
         #                   * Shipment/Package/AdditionalHandling element
       end
+    end
+
+    def dollar_amount(cents)
+      "%0.2f" % (cents / 100.0)
     end
 
     def build_document(xml, expected_root_tag)
