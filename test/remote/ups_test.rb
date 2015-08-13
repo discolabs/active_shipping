@@ -96,6 +96,41 @@ class RemoteUPSTest < Minitest::Test
     assert_nil package_rate[:rate]
   end
 
+  def test_negotiated_rates_portland_to_roosevelt_island
+    skip('No shipper number found in credentials, skipping negotiated rates test') unless @options[:origin_account]
+
+    response = @carrier.find_rates(
+      location_fixtures[:portland],
+      location_fixtures[:roosevelt_island],
+      package_fixtures.values_at(:wii),
+      origin_name: @options[:origin_name],
+      origin_account: @options[:origin_account],
+      negotiated_rates: true,
+    )
+
+    assert response.success?, response.message
+    assert_instance_of Hash, response.params
+    assert_instance_of String, response.xml
+    assert_instance_of Array, response.rates
+    refute response.rates.empty?
+
+    rate = response.rates.first
+    assert_equal 'UPS', rate.carrier
+    assert_equal 'USD', rate.currency
+    assert rate.negotiated_rate > 0, 'Negotiated rate was returned'
+    assert_instance_of Fixnum, rate.total_price
+    assert_instance_of Fixnum, rate.price
+    assert_instance_of String, rate.service_name
+    assert_instance_of String, rate.service_code
+    assert_instance_of Array, rate.package_rates
+    assert_equal package_fixtures.values_at(:book, :wii), rate.packages
+
+    package_rate = rate.package_rates.first
+    assert_instance_of Hash, package_rate
+    assert_instance_of Package, package_rate[:package]
+    assert_nil package_rate[:rate]
+  end
+
   def test_ottawa_to_us_fails_without_zip
     assert_raises(ResponseError) do
       response = @carrier.find_rates(
