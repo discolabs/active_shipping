@@ -257,7 +257,18 @@ module ActiveShipping::Test
                                       :city => 'Melbourne',
                                       :state => 'VIC',
                                       :address1 => '192 George Street',
-                                      :postal_code => '3108')
+                                      :postal_code => '3108'),
+        :portland => Location.new(    :country => 'US',
+                                      :city => 'Portland',
+                                      :address1 => '4016 SE Division St, Suite A',
+                                      :postal_code => '97202',
+                                      :state => 'OR'),
+        :roosevelt_island => Location.new(
+                                      :country => 'US',
+                                      :city => 'New York',
+                                      :address1 => '10 River Road',
+                                      :postal_code => '10044',
+                                      :state => 'NY')
       }
     end
 
