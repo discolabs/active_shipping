@@ -123,7 +123,7 @@ class RemoteUPSTest < Minitest::Test
     assert_instance_of String, rate.service_name
     assert_instance_of String, rate.service_code
     assert_instance_of Array, rate.package_rates
-    assert_equal package_fixtures.values_at(:book, :wii), rate.packages
+    assert_equal package_fixtures.values_at(:wii), rate.packages
 
     package_rate = rate.package_rates.first
     assert_instance_of Hash, package_rate
