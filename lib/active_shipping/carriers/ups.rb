@@ -70,6 +70,9 @@ module ActiveShipping
       "93" => "UPS SurePost (USPS) > 1lb",
       "94" => "UPS SurePost (USPS) BPM",
       "95" => "UPS SurePost (USPS) Media",
+      "1DMS" => "UPS Next Day Air Early (Saturday Delivery)",
+      "1DAS" => "UPS Next Day Air (Saturday Delivery)",
+      "2DAS" => "UPS Second Day Air (Saturday Delivery)",
     }
 
     CANADA_ORIGIN_SERVICES = {
