@@ -309,6 +309,12 @@ module ActiveShipping
                 xml.NegotiatedRatesIndicator
               end
             end
+
+            if options[:saturday_delivery]
+              xml.ShipmentServiceOptions do
+                xml.SaturdayDelivery
+              end
+            end
           end
         end
       end
