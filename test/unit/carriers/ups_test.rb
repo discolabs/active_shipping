@@ -491,6 +491,7 @@ class UPSTest < Minitest::Test
     assert_equal 6, response.delivery_estimates.size
     ground_estimate = response.delivery_estimates.select{ |de| de.service_name == "UPS Ground"}.first
     assert_equal Date.parse('2015-02-5'), ground_estimate.date
+    assert_equal '23:00:00', ground_estimate.time
     assert_equal 3, ground_estimate.business_transit_days
   end
 

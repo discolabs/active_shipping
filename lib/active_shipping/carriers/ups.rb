@@ -860,12 +860,14 @@ module ActiveShipping
           service_name = service_summary.at('Service/Description').text
           service_code = UPS::DEFAULT_SERVICE_NAME_TO_CODE[service_name]
           date = Date.strptime(service_summary.at('EstimatedArrival/Date').text, '%Y-%m-%d')
+          time = service_summary.at('EstimatedArrival/Time').text
           business_transit_days = service_summary.at('EstimatedArrival/BusinessTransitDays').text.to_i
           delivery_estimates << DeliveryDateEstimate.new(origin, destination, self.class.class_variable_get(:@@name),
                                     service_name,
                                     :service_code => service_code,
                                     :guaranteed => service_summary.at('Guaranteed/Code').text == 'Y',
                                     :date =>  date,
+                                    :time => time,
                                     :business_transit_days => business_transit_days)
         end
       end
