@@ -70,6 +70,7 @@ module ActiveShipping
       "93" => "UPS SurePost (USPS) > 1lb",
       "94" => "UPS SurePost (USPS) BPM",
       "95" => "UPS SurePost (USPS) Media",
+      "96" => "UPS Worldwide Express Freight",
       "1DMS" => "UPS Next Day Air Early (Saturday Delivery)",
       "1DAS" => "UPS Next Day Air (Saturday Delivery)",
       "2DAS" => "UPS Second Day Air (Saturday Delivery)",
@@ -115,6 +116,7 @@ module ActiveShipping
     DEFAULT_SERVICE_NAME_TO_CODE['UPS 2nd Day Air'] = "02"
     DEFAULT_SERVICE_NAME_TO_CODE['UPS 3 Day Select'] = "12"
     DEFAULT_SERVICE_NAME_TO_CODE['UPS Next Day Air Early'] = "14"
+    DEFAULT_SERVICE_NAME_TO_CODE['UPS Worldwide Saver'] = "65"
 
     SHIPMENT_DELIVERY_CONFIRMATION_CODES = {
       delivery_confirmation_signature_required: 1,
